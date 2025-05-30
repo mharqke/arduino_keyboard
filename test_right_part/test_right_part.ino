@@ -13,7 +13,8 @@ uint8_t cols[COLS] = {8,7,6,5,4,16,30};
 bool tg1_pressed = false;
 const uint8_t tg1_button[] = {4, 1};
 const uint8_t mo2_button[] = {6, 0};
-const uint8_t mo2_button_left = 97; 
+const uint8_t mo2_button_left = 39; //raw receive data 
+bool mo2_pressed = false; 
 //mo(1) - [4][4]
 //mo(2) - [5][4]
 
@@ -24,9 +25,8 @@ uint8_t keys[COLS][ROWS] = {
    {KEY_DOWN_ARROW, 'n', 'j', 'k', 'l', KEY_F14, 'a'},
    {KEY_F15, 0, 'm', ',', ';', '-', 'a'},
    {KEY_KP_ENTER, KEY_UP_ARROW, ' ', '.', '/', 'a', 'a'},
-   {255, KEY_RIGHT_ARROW, KEY_BACKSPACE, KEY_DELETE, KEY_F16, 'a', 'a'}
+   {0, KEY_RIGHT_ARROW, KEY_BACKSPACE, KEY_DELETE, KEY_F16, 'a', 'a'}
 };
-
 
 uint8_t keys_mo1[COLS][ROWS] = {
    {'a', '6','8', '9', '[', ']', 'a'},
@@ -35,18 +35,17 @@ uint8_t keys_mo1[COLS][ROWS] = {
    {KEY_DOWN_ARROW, 'n', '[', ']', 'l', KEY_F14, 'a'},
    {KEY_F15, 0, '{', '}', ';', '-', 'a'},
    {KEY_KP_ENTER, KEY_UP_ARROW, ' ', '.', '/', 'a', 'a'},
-   {255, KEY_RIGHT_ARROW, KEY_BACKSPACE, KEY_DELETE, KEY_F16, 'a', 'a'}
+   {0, KEY_RIGHT_ARROW, KEY_BACKSPACE, KEY_DELETE, KEY_F16, 'a', 'a'}
 };
 
-
 uint8_t keys_mo2[COLS][ROWS] = {
-   {'a', '6','8', '9', '[', ']', 'a'},
-   {'a', 'y', '7', 'o', '0', 'a', 'a'},
-   {KEY_LEFT_ARROW, 'h', 'u', 'i', 'p', '\'', 'a'},
-   {KEY_DOWN_ARROW, 'n', 'j', 'k', 'l', KEY_F14, 'a'},
+   {0, '6','8', '9', '[', ']', 0},
+   {0, 'y', '7', 'o', '0', 0, 0},
+   {KEY_LEFT_ARROW, 'h', 'u', 'i', 'p', '\'', 0},
+   {KEY_DOWN_ARROW, 'n', 'j', 'k', 'l', KEY_F14, 0},
    {KEY_F15, 0, 'm', ',', ';', '-', 'a'},
-   {KEY_KP_ENTER, KEY_UP_ARROW, ' ', '.', '/', 'a', 'a'},
-   {255, KEY_RIGHT_ARROW, KEY_BACKSPACE, KEY_DELETE, KEY_F16, 'a', 'a'}
+   {KEY_KP_ENTER, KEY_UP_ARROW, ' ', '.', '/', 0, 0},
+   {0, KEY_RIGHT_ARROW, KEY_BACKSPACE, KEY_DELETE, KEY_F16, 0, 0}
 };
 
 uint8_t left_keys[] = {
@@ -54,7 +53,7 @@ uint8_t left_keys[] = {
   KEY_ESC, 'w', '3', 't', KEY_F18, 0, 0,
   KEY_CAPS_LOCK, 's', 'e', 'g', 'b', 0, 0,
   KEY_LEFT_SHIFT, 'x', 'd', 'r', ' ', 0, 0,
-  KEY_TAB, 'z', 'c', 'f', 254, 0, 0,
+  KEY_TAB, 'z', 'c', 'f', 0, 0, 0,
   KEY_F13, 'a', KEY_BACKSPACE, 'v', 0, 0, 0,
   KEY_LEFT_CTRL, 'q', KEY_LEFT_GUI, KEY_LEFT_ALT, KEY_F19, 0, 0
 };
@@ -66,7 +65,7 @@ uint8_t left_keys_mo1[] = {
   KEY_ESC, '_', KEY_F3, ',', KEY_F18, 'a', 'a',
   KEY_CAPS_LOCK, '-', '+', '.', 'b', 'a', 'a',
   KEY_LEFT_SHIFT, KEY_PAUSE, '(', '=', ' ', 'a', 'a',
-  KEY_TAB, 'z', '\\', ')', 254, 'a', 'a',
+  KEY_TAB, 'z', '\\', ')', 0, 'a', 'a',
   KEY_F13, '*', KEY_BACKSPACE, '`', 'a', 'a', 'a',
   KEY_LEFT_CTRL, 'q', KEY_LEFT_GUI, KEY_LEFT_ALT, KEY_F19, 'a', 'a'
 };
@@ -81,8 +80,7 @@ uint8_t left_keys_mo2[] = {
   KEY_LEFT_CTRL, 'q', KEY_LEFT_GUI, KEY_LEFT_ALT, KEY_F19, 'a', 'a'
 };
 
-uint8_t left_keys_tg1[] = 
-{
+uint8_t left_keys_tg1[] = {
   0, 1, 2, 3, 't', 5, 6,
   7, 'q', 9, 'r', 'g', 12, 13,
   14, 'a', 16, 'f', 18, 19, 20,
@@ -91,7 +89,6 @@ uint8_t left_keys_tg1[] =
   35, KEY_LEFT_SHIFT, 37, 38, 39, 40, 41,
   42, 43, 44, 45, 46, 47, 48,
 };
-
 
 bool pressed_buttons[COLS][ROWS]{
   { 0, 0, 0, 0, 0, 0, 0 },
@@ -102,30 +99,27 @@ bool pressed_buttons[COLS][ROWS]{
   { 0, 0, 0, 0, 0, 0, 0 },
   { 0, 0, 0, 0, 0, 0, 0 }
 };
-//
 
 void receiveData(int bytesReceived) {
-    int dataReceived = Wire.read();  // Read the data sent by the Arduino Micro
+    int dataReceived = Wire.read();
+    Serial.print("raw_data: ");
+    Serial.println(dataReceived);
     if (dataReceived < 50) {
-        // Serial.print(0);
-        // Serial.println(dataReceived);
         if (dataReceived == mo1_button){
             mo1_pressed = false;
             Keyboard.releaseAll();
         }
-        // else if (dataReceived % 100 == mo2_button_left){
-        //     pressed_buttons[mo2_button[0]][mo2_button[1] = false;
-        //     Keyboard.releaseAll();
-        // }
+        else if (dataReceived == mo2_button_left) {
+            mo2_pressed = false;
+            Keyboard.releaseAll();
+        }
         else if (mo1_pressed){
             Keyboard.release(left_keys_mo1[dataReceived % 100]);
         }
-        else if (pressed_buttons[mo2_button[0]][mo2_button[1]] == 1){
+        else if (pressed_buttons[mo2_button[0]][mo2_button[1]] == 1 || mo2_pressed){
             Keyboard.release(left_keys_mo2[dataReceived % 100]);
         }
         else if (tg1_pressed){
-            // Serial.print("0 ");
-            // Serial.println(left_keys_tg1[dataReceived % 100]);
             Keyboard.release(left_keys_tg1[dataReceived % 100]);
         }
         else{
@@ -133,24 +127,19 @@ void receiveData(int bytesReceived) {
         }
     }
     else if (dataReceived >= 100 && dataReceived < 150) {
-        // Serial.println(dataReceived);
         if (dataReceived == 100 + mo1_button){
             mo1_pressed = true;
         }
-        // else if (dataReceived % 100 == mo2_button_left){
-        //     pressed_buttons[mo2_button[0]][mo2_button[1] = true;
-        //     Keyboard.releaseAll();
-        // }
-        //
+        else if (dataReceived == 100 + mo2_button_left){
+            mo2_pressed = true;
+        }
         else if (mo1_pressed){
             Keyboard.press(left_keys_mo1[dataReceived % 100]);
         }
-        else if (pressed_buttons[mo2_button[0]][mo2_button[1]] == 1){
+        else if (pressed_buttons[mo2_button[0]][mo2_button[1]] == 1 || mo2_pressed){
             Keyboard.press(left_keys_mo2[dataReceived % 100]);
         }
         else if (tg1_pressed){
-            // Serial.print("1 ");
-            // Serial.println(left_keys_tg1[dataReceived % 100]);
             Keyboard.press(left_keys_tg1[dataReceived % 100]);
         }
         else{
@@ -158,8 +147,6 @@ void receiveData(int bytesReceived) {
         }
     }
 
-
-    // Serial.println(dataReceived);
 }
 
 void setup() {
@@ -187,20 +174,16 @@ void loop() {
         for (uint8_t j = 0; j < COLS; j++) {
             if (digitalRead(cols[j]) == 0) {
                 if (pressed_buttons[i][j] == 0) {
-                    if (keys[i][j] != 255){
-                        if (mo1_pressed){
-                            Keyboard.press(keys_mo1[i][j]);
-                        }
-                        else if (pressed_buttons[mo2_button[0]][mo2_button[1]]){
-                            Keyboard.press(keys_mo2[i][j]);
-                        }
-                        else{
-                            Keyboard.press(keys[i][j]);
-                        } 
+                    if (mo1_pressed){
+                        Keyboard.press(keys_mo1[i][j]);
                     }
+                    else if (pressed_buttons[mo2_button[0]][mo2_button[1]]){
+                        Keyboard.press(keys_mo2[i][j]);
+                    }
+                    else{
+                        Keyboard.press(keys[i][j]);
+                    } 
                     pressed_buttons[i][j] = 1;;
-                    // Serial.print(1);
-                    // Serial.println(keys[i][j]);
                     delay(30);
                 }
             }else if (pressed_buttons[i][j] == 1) {
@@ -220,8 +203,6 @@ void loop() {
                 else{
                     Keyboard.release(keys[i][j]);
                 } 
-                // Serial.print(0);
-                // Serial.println(keys[i][j]);
                 pressed_buttons[i][j] = 0;
                  delay(30);
             }
