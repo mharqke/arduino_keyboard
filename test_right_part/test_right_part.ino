@@ -135,20 +135,18 @@ const uint16_t fn_keys_list[] = {
 };
 
 bool is_fn_key(uint16_t n){
-  for (auto k : fn_keys_list){
-    if (k == n){
-      return true;
+    for (auto k : fn_keys_list){
+        if (k == n){
+          return true;
+        }
     }
-  }
-  return false;
+    return false;
 }
-const uint16_t F_keys_list[] = {
-  KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12, 
-  KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20, KEY_F21, KEY_F22, KEY_F23, KEY_F24
-};
+
 
 bool is_F_key(uint8_t n){
-    for (auto k : F_keys_list){
+    static uint16_t F_keys_position_list[] = {0,1,2,3,4,9,11,35,46};
+    for (auto k : F_keys_position_list){
         if (k == n){
             return true;
         }
@@ -205,7 +203,7 @@ uint16_t left_keys_mo1[] = {
   KEY_F1, KEY_F2, KEY_F4, KEY_F5, KEY_F17, KEY_ENTER, 0,
   0, '_', KEY_F3, ',', KEY_F18, 0, 0,
   0, KEY_MINUS, '+', '.', 'b', 0, 0,
-  0, 0xCD, '(', '=', KEY_SPACE, 0, 0,
+  0, 0xCD, '(', '=', ' ', 0, 0,
   0, 0x194, '\\', ')', 0, 0, 0,
   KEY_F13, '*', 0, '`', 0, 0, 0,
   0, 'q', 0, 0, KEY_F19, 0, 0
@@ -246,6 +244,7 @@ void receiveData(int bytesReceived) {
     int dataReceived = Wire.read();
     Serial.print("raw_data: ");
     Serial.println(dataReceived);
+    uint16_t button_index = dataReceived % 100;
     if (dataReceived < 50) {
         if (dataReceived == mo1_button){
             mo1_pressed = false;
@@ -256,29 +255,29 @@ void receiveData(int bytesReceived) {
             Keyboard.releaseAll();
         }
         else if (mo1_pressed){
-            if (is_fn_key(left_keys_mo1[dataReceived % 100])){
-                Consumer.release(left_keys_mo1[dataReceived % 100]);
+            if (is_fn_key(left_keys_mo1[button_index])){
+                Consumer.release(left_keys_mo1[button_index]);
             }
-            else if (is_F_key(left_keys_mo1[dataReceived % 100])){
-                Keyboard.release(KeyboardKeycode(left_keys_mo1[dataReceived % 100]));
+            else if (is_F_key(button_index)){
+                Keyboard.release(KeyboardKeycode(left_keys_mo1[button_index]));
             }
             else{
-                Keyboard.release(left_keys_mo1[dataReceived % 100]);
+                Keyboard.release(left_keys_mo1[button_index]);
             }
         }
         else if (mo2_pressed || pressed_buttons[mo2_button[0]][mo2_button[1]] == 1){
-            if (is_fn_key(left_keys_mo2[dataReceived % 100])){
-                Consumer.release(left_keys_mo2[dataReceived % 100]);
+            if (is_fn_key(left_keys_mo2[button_index])){
+                Consumer.release(left_keys_mo2[button_index]);
             }
             else{
-                Keyboard.release(KeyboardKeycode(left_keys_mo2[dataReceived % 100]));
+                Keyboard.release(KeyboardKeycode(left_keys_mo2[button_index]));
             }
         }
         else if (tg1_pressed){
-            Keyboard.release(KeyboardKeycode(left_keys_tg1[dataReceived % 100]));
+            Keyboard.release(KeyboardKeycode(left_keys_tg1[button_index]));
         }
         else{
-            Keyboard.release(KeyboardKeycode(left_keys[dataReceived % 100]));
+            Keyboard.release(KeyboardKeycode(left_keys[button_index]));
         }
     }
     else if (dataReceived >= 100 && dataReceived < 150) {
@@ -289,29 +288,29 @@ void receiveData(int bytesReceived) {
             mo2_pressed = true;
         }
         else if (mo1_pressed){
-            if (is_fn_key(left_keys_mo1[dataReceived % 100])){
-                Consumer.press(left_keys_mo1[dataReceived % 100]);
+            if (is_fn_key(left_keys_mo1[button_index])){
+                Consumer.press(left_keys_mo1[button_index]);
             }
-            else if (is_F_key(left_keys_mo1[dataReceived % 100])){
-                Keyboard.press(KeyboardKeycode(left_keys_mo1[dataReceived % 100]));
+            else if (is_F_key(button_index)){
+                Keyboard.press(KeyboardKeycode(left_keys_mo1[button_index]));
             }
             else{
-                Keyboard.press(left_keys_mo1[dataReceived % 100]);
+                Keyboard.press(left_keys_mo1[button_index]);
             }
         }
         else if (mo2_pressed || pressed_buttons[mo2_button[0]][mo2_button[1]] == 1){
-            if (is_fn_key(left_keys_mo2[dataReceived % 100])){
-                Consumer.press(left_keys_mo2[dataReceived % 100]);
+            if (is_fn_key(left_keys_mo2[button_index])){
+                Consumer.press(left_keys_mo2[button_index]);
             }
              else{
-                Keyboard.press(KeyboardKeycode(left_keys_mo2[dataReceived % 100]));
+                Keyboard.press(KeyboardKeycode(left_keys_mo2[button_index]));
             }
         }
         else if (tg1_pressed){
-            Keyboard.press(KeyboardKeycode(left_keys_tg1[dataReceived % 100]));
+            Keyboard.press(KeyboardKeycode(left_keys_tg1[button_index]));
         }
         else{
-            Keyboard.press(KeyboardKeycode(left_keys[dataReceived % 100]));
+            Keyboard.press(KeyboardKeycode(left_keys[button_index]));
         }
     }
 
