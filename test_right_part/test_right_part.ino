@@ -34,7 +34,7 @@ bool is_fn_key(uint16_t n){
 }
 
 
-bool is_F_key(uint8_t n){
+bool is_F_key_left(uint8_t n){
     static uint16_t F_keys_position_list[] = {0,1,2,3,4,9,11,35,46};
     for (auto k : F_keys_position_list){
         if (k == n){
@@ -43,6 +43,16 @@ bool is_F_key(uint8_t n){
     }
     return false;
 };
+bool is_F_key(uint8_t n, uint8_t m){
+    static uint16_t F_keys_position_list[10][2] = {{0,1}, {0,2}, {0,3}, {1,2}, {1,4}, {3,5}, {4,0}, {6,4}, {0,4}, {0,5}};
+    for (auto k : F_keys_position_list){
+        if (k[0] == n && k[1] == m){
+            return true;
+        }
+    }
+    return false;
+};
+
 
 uint8_t keys[COLS][ROWS] = {
    {0, KEY_6, KEY_8, KEY_9, KEY_LEFT_BRACE, KEY_RIGHT_BRACE, 0},
@@ -55,7 +65,7 @@ uint8_t keys[COLS][ROWS] = {
 };
 
 uint8_t keys_mo1[COLS][ROWS] = {
-   {0, KEY_F6, KEY_F8, KEY_F9, '[', ']', 0},
+   {0, KEY_F6, KEY_F8, KEY_F9, KEY_F11, KEY_F12, 0},
    {0, 'y', KEY_F7, 'o', KEY_F10, 0, 0},
    {KEY_LEFT_ARROW, '@', 'u', 'i', 'p', '\'', 0},
    {KEY_DOWN_ARROW, 'n', '[', ']', '&', KEY_F14, 0},
@@ -112,11 +122,11 @@ uint8_t left_keys_mo2[] = {
 
 uint8_t left_keys_tg1[] = {
   0, 1, 2, 3, KEY_T, 5, 6,
-  7, KEY_Q, 9, KEY_R, KEY_G, 12, 13,
+  KEY_ESC, KEY_Q, 9, KEY_R, KEY_G, 12, 13,
   14, KEY_A, 16, KEY_F, 18, 19, 20,
-  21, 22, KEY_W, KEY_E, 25, 26, 27,
+  21, KEY_X, KEY_W, KEY_E, KEY_SPACE, 26,         27,
   28, KEY_LEFT_CTRL, KEY_S, KEY_D, 32, 33, 34,
-  35, KEY_LEFT_SHIFT, 37, 38, 39, 40, 41,
+  35, KEY_LEFT_SHIFT, 37, KEY_V, 39, 40, 41,
   42, 43, 44, 45, 46, 47, 48,
 };
 
@@ -132,8 +142,8 @@ bool pressed_buttons[COLS][ROWS]{
 
 void receiveData(int bytesReceived) {
     int dataReceived = Wire.read();
-    Serial.print("raw_data: ");
-    Serial.println(dataReceived);
+    // Serial.print("raw_data: ");
+    // Serial.println(dataReceived);
     uint16_t button_index = dataReceived % 100;
     if (dataReceived < 50) {
         if (dataReceived == mo1_button){
@@ -148,7 +158,7 @@ void receiveData(int bytesReceived) {
             if (is_fn_key(left_keys_mo1[button_index])){
                 Consumer.release(left_keys_mo1[button_index]);
             }
-            else if (is_F_key(button_index)){
+            else if (is_F_key_left(button_index)){
                 Keyboard.release(KeyboardKeycode(left_keys_mo1[button_index]));
             }
             else{
@@ -181,7 +191,7 @@ void receiveData(int bytesReceived) {
             if (is_fn_key(left_keys_mo1[button_index])){
                 Consumer.press(left_keys_mo1[button_index]);
             }
-            else if (is_F_key(button_index)){
+            else if (is_F_key_left(button_index)){
                 Keyboard.press(KeyboardKeycode(left_keys_mo1[button_index]));
             }
             else{
@@ -233,12 +243,17 @@ void loop() {
         digitalWrite(rows[i], 0);
         for (uint8_t j = 0; j < COLS; j++) {
             if (digitalRead(cols[j]) == 0) {
-                Serial.print(i);
-                Serial.print(" - ");
-                Serial.println(j);
+                // Serial.print(i);
+                // Serial.print(" - ");
+                // Serial.println(j);
                 if (pressed_buttons[i][j] == 0) {
                     if (mo1_pressed){
-                        Keyboard.press((keys_mo1[i][j]));
+                        if (is_F_key(i,j)){
+                            Keyboard.press(KeyboardKeycode(keys_mo1[i][j]));
+                        }
+                        else{
+                            Keyboard.press((keys_mo1[i][j]));
+                        }
                     }
                     else if (pressed_buttons[mo2_button[0]][mo2_button[1]]){
                         Keyboard.press(KeyboardKeycode(keys_mo2[i][j]));
@@ -261,7 +276,12 @@ void loop() {
                     Keyboard.release(KeyboardKeycode(keys_mo2[i][j]));
                 }
                 else if (mo1_pressed){
-                    Keyboard.release((keys_mo1[i][j]));
+                    if (is_F_key(i,j)){
+                        Keyboard.release(KeyboardKeycode(keys_mo1[i][j]));
+                    }
+                    else{
+                        Keyboard.release((keys_mo1[i][j]));
+                    }
                 }
                 else{
                     Keyboard.release(KeyboardKeycode(keys[i][j]));
