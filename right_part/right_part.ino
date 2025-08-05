@@ -5,6 +5,11 @@
 #include <Wire.h>
 const int slaveAddress = 8;  // Address of the Arduino Nano (Slave)
 
+#include <SD.h>
+const int chipSelect = 10;
+File myFile;
+String filename = "keysData.txt";
+bool SD_CORRECT = false;
 
 const uint8_t ROWS = 8;
 const uint8_t COLS = 9;
@@ -143,6 +148,150 @@ bool pressed_buttons[COLS][ROWS]
 };
 
 
+bool check_and_create_file()
+{
+    Serial.print("Initializing SD card...");
+    if (!SD.begin(chipSelect)) {
+        Serial.println("initialization failed!");
+        return 0;
+    }
+    Serial.println("initialization done.");
+
+    if (SD.exists(filename))
+        Serial.println("'test.txt' exists.");
+    else
+    {
+        Serial.println("'test.txt' doesn't exist.");
+        Serial.println("Creating 'test.txt'...");
+        myFile = SD.open(filename, FILE_WRITE);
+        myFile.close();
+
+        if (SD.exists(filename)){
+        Serial.println("'test.txt' exists.");
+        }
+        else{
+        Serial.println("'test.txt' doesn't exist.");
+        return 0;
+        }
+    }
+  
+    myFile = SD.open(filename, FILE_WRITE);
+    myFile.print('\n');
+    myFile.close();
+  
+    return 1;
+}
+
+void receiveDataWriting(int bytesReceived) {
+
+    int dataReceived = Wire.read();
+    Serial.print("dataReceived: ");
+    Serial.println(dataReceived);
+    uint16_t button_index = dataReceived % 100;  //try to move to press section
+    myFile = SD.open(filename, FILE_WRITE);
+
+    if (dataReceived < 100) { //release button
+        if (dataReceived == mo1_button){
+            mo1_pressed = false;
+            Serial.println("mo1 button was unpressed");
+            Keyboard.releaseAll();
+        }
+        else if (dataReceived == mo2_buttons[0] || dataReceived == mo2_buttons[1]) {
+            mo2_pressed = false;
+            Serial.println("mo2 button was unpressed");
+            Keyboard.releaseAll();
+        }
+        else if(dataReceived == tg1_button){
+            tg1_pressed = !tg1_pressed;
+        }
+        else if (mo1_pressed){
+            if (is_fn_key(keys_mo1[button_index])){
+                Consumer.release(keys_mo1[button_index]);
+            }
+            else if (is_F_key(button_index)){
+                Keyboard.release(KeyboardKeycode(keys_mo1[button_index]));
+            }
+            else{
+                Keyboard.release(keys_mo1[button_index]);
+            }
+        }
+        else if (mo2_pressed){
+            if (is_fn_key(keys_mo2[button_index])){
+                Consumer.release(keys_mo2[button_index]);
+            }
+            else{
+                Keyboard.release(KeyboardKeycode(keys_mo2[button_index]));
+            }
+        }
+        else if (tg1_pressed){
+            Keyboard.release(KeyboardKeycode(keys_tg1[button_index]));
+        }
+        else{
+            Keyboard.release(KeyboardKeycode(keys[button_index]));
+        }
+    }
+    else if (dataReceived >= 100 && dataReceived < 256) { //press button
+        if (dataReceived == 100 + mo1_button){
+            mo1_pressed = true;
+            myFile.print(0);
+            myFile.print(mo1_button);
+            myFile.print(';');
+            Serial.println("mo1 button was pressed");
+        }
+        else if (dataReceived == 100 + mo2_buttons[0] || dataReceived == 100 + mo2_buttons[1]){
+            mo2_pressed = true;
+            myFile.print(0);
+            myFile.print(mo2_buttons[0]);
+            myFile.print(';');
+            Serial.println("mo2 button was pressed");
+        }
+        else if(dataReceived == 100 + tg1_button){
+            myFile.print(0);
+            myFile.print(tg1_button);
+            myFile.print(';');
+            return;
+        }
+        else if (mo1_pressed){
+            myFile.print(1);
+            myFile.print(button_index);
+            myFile.print(';');
+            if (is_fn_key(keys_mo1[button_index])){
+                Consumer.press(keys_mo1[button_index]);
+            }
+            else if (is_F_key(button_index)){
+                Keyboard.press(KeyboardKeycode(keys_mo1[button_index]));
+            }
+            else{
+                Keyboard.press(keys_mo1[button_index]);
+            }
+        }
+        else if (mo2_pressed){
+            myFile.print(2);
+            myFile.print(button_index);
+            myFile.print(';');
+            if (is_fn_key(keys_mo2[button_index])){
+                Consumer.press(keys_mo2[button_index]);
+            }
+             else{
+                Keyboard.press(KeyboardKeycode(keys_mo2[button_index]));
+            }
+        }
+        else if (tg1_pressed){
+            myFile.print(3);
+            myFile.print(button_index);
+            myFile.print(';');
+            Keyboard.press(KeyboardKeycode(keys_tg1[button_index]));
+        }
+        else{
+            myFile.print(0);
+            myFile.print(button_index);
+            myFile.print(';');
+            Keyboard.press(KeyboardKeycode(keys[button_index]));
+        }
+    }
+    myFile.close();
+}
+
 void receiveData(int bytesReceived) {
 
     int dataReceived = Wire.read();
@@ -231,18 +380,55 @@ void receiveData(int bytesReceived) {
 
 }
 
+void readFile(){  // заново открываем файл для чтения:
+    myFile = SD.open(filename);
+    if (myFile) {
+        Serial.println("'test.txt':");
+
+        while (myFile.available()) {
+        Serial.write(myFile.read());
+        }
+        myFile.close();
+    } else {
+        Serial.println("error opening 'test.txt'");
+    }
+}
 void setup() {
 
     Serial.begin(9600);
+
+    if(check_and_create_file()){
+        SD_CORRECT = true;
+        Serial.println("SD_correct is true");
+    }
+    else{
+        SD_CORRECT = false;
+        Serial.println("SD_correct is false");
+    }   
     Wire.begin(slaveAddress);
-    Wire.onReceive(receiveData);
+
+    if(SD_CORRECT){
+        Wire.onReceive(receiveDataWriting);
+        Serial.println("SD is CORRECT");
+    }
+    else{
+        Wire.onReceive(receiveData);
+        Serial.println("SD is not CORRECT");
+    }
 
     Keyboard.begin();
     Consumer.begin();
-    
+    Serial.println("end setup");
+
 }
 
 void loop() {
-
-
+    if(Serial.available()){
+        String com = Serial.readString();
+        Serial.println("string com: ");
+        if (com == "read"){
+            readFile();
+        }
+    }
 }
+
