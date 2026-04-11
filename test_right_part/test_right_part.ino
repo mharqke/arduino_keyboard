@@ -5,12 +5,18 @@ bool mo1_pressed = false;
 bool mo2_pressed = false;
 bool tg1_pressed = false;
 
+const uint8_t SOUND_PIN = A3;
+const uint8_t sound_button_i = 7;
+const uint8_t sound_button_j = 1;
+const uint8_t sound_up_button_i = 7;
+const uint8_t sound_up_button_j = 0;
+const uint8_t sound_down_button_i = 7;
+const uint8_t sound_down_button_j = 2;
+const uint8_t sound_time = 80;
+uint8_t sound_val = 135;
 uint8_t sound_timer = 0;
-bool sound_val = 0;
+bool sound_press = 0;
 bool sound_flag = 0;
-uint8_t SOUND_PIN = A3;
-uint8_t sound_button_i = 4;
-uint8_t sound_button_j = 3;
 
 // #define SEARCH(arr, body, size) {\
 //   for(i = 0; i < size; i++)\
@@ -184,7 +190,7 @@ void receiveData(int bytesReceived) {
       Keyboard.press(KeyboardKeycode(left_keys[button_index]));
     }
 
-    sound_val = 1;
+    sound_press = 1;
   }
 }
 
@@ -218,12 +224,12 @@ void loop() {
       if (digitalRead(cols[j]) == 0) {
 
         if (pressed_buttons[i][j] == 0) {  //------------------------press------------------------
-          Serial.print("release i - j: ");
-          Serial.print(i);
-          Serial.print(" - ");
-          Serial.print(j);
-          Serial.print("; keys[i][j]: ");
-          Serial.println(keys[i][j]);
+          // Serial.print("press i - j: ");
+          // Serial.print(i);
+          // Serial.print(" - ");
+          // Serial.print(j);
+          // Serial.print("; keys[i][j]: ");
+          // Serial.println(keys[i][j]);
 
           if (i == mo2_button[0] and j == mo2_button[1]) {  // mo2 was pressed
             Keyboard.releaseAll();
@@ -235,7 +241,15 @@ void loop() {
           else if (mo1_pressed) {  // mo1 press
             if (sound_button_i == i and sound_button_j == j){
               sound_flag = !sound_flag;
-            }else if (is_F_key(i, j)) {
+            } else if(sound_up_button_i == i and sound_up_button_j == j){
+              if (sound_val < 245) sound_val += 10;
+              Serial.print("sound_val:");
+              Serial.println(sound_val);
+            } else if(sound_down_button_i == i and sound_down_button_j == j){
+              if (sound_val > 9) sound_val -= 10;
+              Serial.print("sound_val:");
+              Serial.println(sound_val);
+            } else if (is_F_key(i, j)) {
               Keyboard.press(KeyboardKeycode(keys_mo1[i][j]));
               // Serial.println("key is f");
             } else {
@@ -246,7 +260,7 @@ void loop() {
           } else {  // common layout press
             Keyboard.press(KeyboardKeycode(keys[i][j]));
           }
-          sound_val = 1;
+          sound_press = 1;
 
           pressed_buttons[i][j] = 1;
           delay(30);
@@ -295,14 +309,14 @@ void loop() {
   }
 
 
-  if (sound_val && sound_flag) {
+  if (sound_press && sound_flag) {
 
-    digitalWrite(SOUND_PIN, sound_val);
+    analogWrite(SOUND_PIN, sound_val);
 
-    if (sound_timer > 80) {
-      sound_val = 0;
+    if (sound_timer > sound_time) {
+      sound_press = 0;
       sound_timer = 0;
-      digitalWrite(SOUND_PIN, sound_val);
+      analogWrite(SOUND_PIN, 0);
     } else {
       sound_timer++;
     }
