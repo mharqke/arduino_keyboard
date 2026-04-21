@@ -6,17 +6,24 @@ bool mo2_pressed = false;
 bool tg1_pressed = false;
 
 const uint8_t SOUND_PIN = A3;
-const uint8_t sound_button_i = 7;
-const uint8_t sound_button_j = 1;
-const uint8_t sound_up_button_i = 7;
-const uint8_t sound_up_button_j = 0;
-const uint8_t sound_down_button_i = 7;
-const uint8_t sound_down_button_j = 2;
-const uint8_t sound_time = 80;
-uint8_t sound_val = 135;
+const uint8_t sound_val = 135;
+const uint8_t sound_button_i = 0;
+const uint8_t sound_button_j = 3;
+const uint8_t sound_up_button_on_i = 1;
+const uint8_t sound_up_button_on_j = 2;
+const uint8_t sound_down_button_on_i = 0;
+const uint8_t sound_down_button_on_j = 2;
+const uint8_t sound_up_button_off_i = 0;
+const uint8_t sound_up_button_off_j = 1;
+const uint8_t sound_down_button_off_i = 0;
+const uint8_t sound_down_button_off_j = 0;
+uint8_t sound_time_on = 30;
+uint8_t sound_time_off = 200;
 uint8_t sound_timer = 0;
+uint8_t sound_pass_timer = 0;
 bool sound_press = 0;
 bool sound_flag = 0;
+
 
 // #define SEARCH(arr, body, size) {\
 //   for(i = 0; i < size; i++)\
@@ -82,7 +89,7 @@ bool pressed_buttons[ROWS][COLS] = {
 void receiveData(int bytesReceived) {
   int dataReceived = Wire.read();
   uint16_t button_index = dataReceived % 100;
-  // Serial.print(left_keys[button_index]);
+  // // Serial.print(left_keys[button_index]);
   // Serial.print(" - ");
   // Serial.print("raw_data: ");
   // Serial.println(dataReceived);
@@ -241,14 +248,22 @@ void loop() {
           else if (mo1_pressed) {  // mo1 press
             if (sound_button_i == i and sound_button_j == j){
               sound_flag = !sound_flag;
-            } else if(sound_up_button_i == i and sound_up_button_j == j){
-              if (sound_val < 245) sound_val += 10;
-              Serial.print("sound_val:");
-              Serial.println(sound_val);
-            } else if(sound_down_button_i == i and sound_down_button_j == j){
-              if (sound_val > 9) sound_val -= 10;
-              Serial.print("sound_val:");
-              Serial.println(sound_val);
+            } else if(sound_up_button_on_i == i and sound_up_button_on_j == j){
+              if (sound_time_on < 245) sound_time_on += 5;
+              // Serial.print("sound_time_on:");
+              // Serial.println(sound_time_on);
+            } else if(sound_down_button_on_i == i and sound_down_button_on_j == j){
+              if (sound_time_on > 9) sound_time_on -= 5;
+              // Serial.print("sound_time_on:");
+              // Serial.println(sound_time_on);
+            } else if(sound_up_button_off_i == i and sound_up_button_off_j == j){
+              if (sound_time_off < 245) sound_time_off += 5;
+              // Serial.print("sound_time_off:");
+              // Serial.println(sound_time_off);
+            } else if(sound_down_button_off_i == i and sound_down_button_off_j == j){
+              if (sound_time_off > 9) sound_time_off -= 5;
+              // Serial.print("sound_time_off:");
+              // Serial.println(sound_time_off);
             } else if (is_F_key(i, j)) {
               Keyboard.press(KeyboardKeycode(keys_mo1[i][j]));
               // Serial.println("key is f");
@@ -261,9 +276,9 @@ void loop() {
             Keyboard.press(KeyboardKeycode(keys[i][j]));
           }
           sound_press = 1;
-
           pressed_buttons[i][j] = 1;
           delay(30);
+          break;
         }
 
       } else if (pressed_buttons[i][j] == 1) {  //------------------------release------------------------
@@ -308,18 +323,26 @@ void loop() {
     digitalWrite(rows[i], 1);
   }
 
+  if (sound_pass_timer > sound_time_off){
+    if (sound_press && sound_flag) {
+      analogWrite(SOUND_PIN, sound_val);
 
-  if (sound_press && sound_flag) {
-
-    analogWrite(SOUND_PIN, sound_val);
-
-    if (sound_timer > sound_time) {
-      sound_press = 0;
-      sound_timer = 0;
-      analogWrite(SOUND_PIN, 0);
-    } else {
-      sound_timer++;
+      if (sound_timer > sound_time_on) {
+        sound_press = 0;
+        sound_timer = 0;
+        analogWrite(SOUND_PIN, 0);
+        sound_pass_timer = 0;
+      } else {
+        sound_timer++;
+      }
     }
+  } else{
+    sound_pass_timer++;
   }
-
 }
+// 
+
+
+
+
+
